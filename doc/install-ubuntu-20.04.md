@@ -2,19 +2,19 @@
 
 ## Summary<a name="summary">
 
-1. [Install system dependencies](#install-system-dep)
-1.1. [Install Ubuntu requested packages](#install-system-dep-ubuntu)
-1.2. [Install Iit Butterworth Filter](#install-system-dep-butterworth)
-1.3. [Install ViSP](#install-system-dep-visp)
-2. [Install ROS dependencies](#install-ros-dep)
-2.1. [Install ROS noetic](#install-ros-dep-noetic)
-2.2. [Install vision_visp package](#install-ros-dep-vision-visp)
-2.3. [Install visp_ros package](#install-ros-dep-visp-ros)
-2.4. [Install visp_ros_coppeliasim package](#install-ros-dep-visp-ros-coppeliasim)
-3. [Install CoppeliaSim](#install-coppeliasim)
-3.1. [Download CoppeliaSim](#install-coppeliasim-download)
-3.2. [Build ROSInterface for CoppeliaSim](#install-coppeliasim-ros-interface)
-4. [Run the simulator](#run-simulator)
+1. [Install system dependencies](#install-system-dep)</br>
+1.1. [Install Ubuntu requested packages](#install-system-dep-ubuntu)</br>
+1.2. [Install Iit Butterworth Filter](#install-system-dep-butterworth)</br>
+1.3. [Install ViSP](#install-system-dep-visp)</br>
+2. [Install ROS dependencies](#install-ros-dep)</br>
+2.1. [Install ROS noetic](#install-ros-dep-noetic)</br>
+2.2. [Install vision_visp package](#install-ros-dep-vision-visp)</br>
+2.3. [Install visp_ros package](#install-ros-dep-visp-ros)</br>
+2.4. [Install visp_ros_coppeliasim package](#install-ros-dep-visp-ros-coppeliasim)</br>
+3. [Install CoppeliaSim](#install-coppeliasim)</br>
+3.1. [Download CoppeliaSim](#install-coppeliasim-download)</br>
+3.2. [Build ROSInterface for CoppeliaSim](#install-coppeliasim-ros-interface)</br>
+4. [Run the Franka simulator](#run-franka-simulator)</br>
 
 ## 1. Install system dependencies <a name="install-system-dep"></a>
 
@@ -188,7 +188,8 @@ Since `CoppeliaSim` comes with a `ROSInterface` build for ROS `melodic` and we a
 
     ```
     $ cd ~/catkin_ws/src/
-    $ git clone --recursive https://github.com/CoppeliaRobotics/simExtROSInterface.git --branch coppeliasim-v4.1.0 sim_ros_interface 
+    $ git clone --recursive https://github.com/CoppeliaRobotics/simExtROSInterface.git \
+                --branch coppeliasim-v4.1.0 sim_ros_interface 
     ```
 
 3. Build `ROSInterface` node 
@@ -209,7 +210,7 @@ Since `CoppeliaSim` comes with a `ROSInterface` build for ROS `melodic` and we a
 
 Back to [summary](#summary).
 
-## 4. Run the simulator <a name="run-simulator"></a>
+## 4. Run the Franka simulator <a name="run-franka-simulator"></a>
 
 In what follows, we assume that `CoppeliaSim` is located in `~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04`, that the ROS package `visp_ros_coppeliasim` is located in `~/catkin_ws/src`, and that we are going to run the file related to IBVS AprilTag synchronization (see folder `visp_ros_coppeliasim/src` for more details). 
 
