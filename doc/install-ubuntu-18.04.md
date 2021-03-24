@@ -176,38 +176,6 @@ Back to [summary](#summary).
 
 Since `CoppeliaSim` comes with a `ROSInterface` build for ROS `melodic` there is no need to build `ROSInterface`.
 
-1. Get the last version of  `libPlugin` from [here](https://github.com/CoppeliaRobotics/libPlugin).
-
-    ```
-    $ cd ~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu18_04/programming
-    $ mv libPlugin/ libPlugin_orig/
-    $ git clone https://github.com/CoppeliaRobotics/libPlugin.git --branch coppeliasim-v4.1.0
-    ```
-
-2. Get `ROSInterface` node source code
-
-    ```
-    $ cd ~/catkin_ws/src/
-    $ git clone --recursive https://github.com/CoppeliaRobotics/simExtROSInterface.git \
-                --branch coppeliasim-v4.1.0 sim_ros_interface 
-    ```
-
-3. Build `ROSInterface` node 
-
-    ```
-    $ cd ~/catkin_ws
-    $ source /opt/ros/melodic/setup.bash
-    $ export COPPELIASIM_ROOT_DIR=~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu18_04
-    $ sudo apt-get install ros-melodic-image-transport ros-melodic-tf ros-melodic-tf2-geometry-ms ros-melodic-image-proc ros-melodic-kdl-parser ros-melodic-resource-retriever xsltproc
-    $ pip install xmlschema
-    $ catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release
-    ```
-4. Copy `ROSInterface` in the CoppeliaSim directory
-
-    ```
-    $ cp devel/lib/libsimExtROSInterface.so ~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04
-    ```
-
 Back to [summary](#summary).
 
 ## 4. Run the Franka simulator <a name="run-franka-simulator"></a>
