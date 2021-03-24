@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>visp_ros_coppeliasim</name>
+  <version>1.0.0</version>
+  <description>The visp_ros_coppeliasim package</description>
+
+  <maintainer email="Alexander.Oliva@inria.fr">Alexander Oliva</maintainer>
+  <maintainer email="Fabien.Spindler@inria.fr">Fabien Spindler</maintainer>
+
+  <license>GPLv2</license>
+
+  <url type="repository">http://github.com/lagadic/visp_ros_coppeliasim</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>visp_ros</build_depend>
+  <build_depend>kdl_parser</build_depend>
+
+  <build_export_depend>geometry_msgs</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+  <build_export_depend>visp_ros</build_export_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>visp_ros</exec_depend>
+  <exec_depend>kdl_parser</exec_depend>
+</package>
