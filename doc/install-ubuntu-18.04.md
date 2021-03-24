@@ -1,4 +1,4 @@
-# Installation on Ubuntu 20.04
+# Installation on Ubuntu 18.04
 
 ## Summary<a name="summary">
 
@@ -7,7 +7,7 @@
 1.2. [Install Iit Butterworth Filter](#install-system-dep-butterworth)</br>
 1.3. [Install ViSP](#install-system-dep-visp)</br>
 2. [Install ROS dependencies](#install-ros-dep)</br>
-2.1. [Install ROS noetic](#install-ros-dep-noetic)</br>
+2.1. [Install ROS melodic](#install-ros-dep-melodic)</br>
 2.2. [Install vision_visp package](#install-ros-dep-vision-visp)</br>
 2.3. [Install visp_ros package](#install-ros-dep-visp-ros)</br>
 2.4. [Install visp_ros_coppeliasim package](#install-ros-dep-visp-ros-coppeliasim)</br>
@@ -58,7 +58,7 @@ Back to [summary](#summary).
 
 ### 1.3. Install ViSP <a name="install-system-dep-visp"></a>
 
-ViSP last release is packaged for ROS, but at the time this tutorial was written, not for `neotic` distro. Moreover, ViSP last release is not packaged for Ubuntu 20.04.
+ViSP last release is packaged for ROS, but at the time this tutorial was written, not for `melodic` distro. Moreover, ViSP last release is not packaged for Ubuntu 18.04.
 
 That's why you have to install [VISP](visp.inria.fr) from source, following the instructions listed [here](https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-install-ubuntu.html). 
 
@@ -95,9 +95,9 @@ Back to [summary](#summary).
 
 ## 2. Install ROS dependencies <a name="install-ros-dep"></a>
 
-### 2.1. Install ROS noetic <a name="install-ros-dep-noetic"></a>
+### 2.1. Install ROS melodic <a name="install-ros-dep-melodic"></a>
 
-For **Ubuntu 20.04**, the native version of ROS is **noetic**. A tutorial on how to easily install ROS noetic on Ubuntu can be found [here](http://wiki.ros.org/noetic/Installation/Ubuntu). Be sure to complete also the [first tutorial](http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment) in order to create a ROS catkin workspace.
+For **Ubuntu 18.04**, the native version of ROS is **melodic**. A tutorial on how to easily install ROS melodic on Ubuntu can be found [here](http://wiki.ros.org/melodic/Installation/Ubuntu). Be sure to complete also the [first tutorial](http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment) in order to create a ROS catkin workspace.
 
 At this point we assume that your workspace is in `~/catkin_ws`.
 
@@ -107,17 +107,17 @@ Back to [summary](#summary).
 
 From this metapackage we need `visp_bridge` package in order to be able to build `visp_ros` as described in the next section. To install this package:
 
-- Clone `vision_visp` package in the cartkin workspace, and switch to `noetic` branch
+- Clone `vision_visp` package in the cartkin workspace, and switch to `melodic` branch
 
     ```
     $ cd ~/catkin_ws/src
-    $ git clone https://github.com/lagadic/vision_visp.git --branch noetic
+    $ git clone https://github.com/lagadic/vision_visp.git --branch melodic
     ```
 
 - Build package
 
     ```
-    $ source /opt/ros/noetic/setup.bash
+    $ source /opt/ros/melodic/setup.bash
     $ cd ~/catkin_ws/
     $ catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release -DVISP_DIR=~/software/visp/visp-build
     ```
@@ -136,7 +136,7 @@ Back to [summary](#summary).
 - Build package
 
     ```
-    $ source /opt/ros/noetic/setup.bash
+    $ source /opt/ros/melodic/setup.bash
     $ cd ~/catkin_ws/
     $ catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release -DVISP_DIR=~/software/visp/visp-build
     ```
@@ -155,7 +155,7 @@ Back to [summary](#summary).
 - Build package
 
     ```
-    $ source /opt/ros/noetic/setup.bash
+    $ source /opt/ros/melodic/setup.bash
     $ cd ~/catkin_ws/
     $ catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release -DVISP_DIR=~/software/visp/visp-build
     ```
@@ -166,20 +166,20 @@ Back to [summary](#summary).
 
 ### 3.1. Download CoppeliaSim <a name="install-coppeliasim-download"></a>
 
-- Download the last edu version of `CoppeliaSim` for Ubuntu 20.04 from [here](https://coppeliarobotics.com/downloads) (e.g., `CoppeliaSim_Edu_V4_1_0_Ubuntu20_04.tar.xz`).
+- Download the last edu version of `CoppeliaSim` for Ubuntu 18.04 from [here](https://coppeliarobotics.com/downloads) (e.g., `CoppeliaSim_Edu_V4_1_0_Ubuntu18_04.tar.xz`).
 - Extract the archive content in `~/software` workspace.
-- At this point you should have `CoppeliaSim` in `~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04/` folder
+- At this point you should have `CoppeliaSim` in `~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu18_04/` folder
 
 Back to [summary](#summary).
 
 ### 3.2. Build ROSInterface for CoppeliaSim <a name="install-coppeliasim-ros-interface"></a>
 
-Since `CoppeliaSim` comes with a `ROSInterface` build for ROS `melodic` and we are using ROS we need to:
+Since `CoppeliaSim` comes with a `ROSInterface` build for ROS `melodic` there is no need to build `ROSInterface`.
 
 1. Get the last version of  `libPlugin` from [here](https://github.com/CoppeliaRobotics/libPlugin).
 
     ```
-    $ cd ~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04/programming
+    $ cd ~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu18_04/programming
     $ mv libPlugin/ libPlugin_orig/
     $ git clone https://github.com/CoppeliaRobotics/libPlugin.git --branch coppeliasim-v4.1.0
     ```
@@ -196,10 +196,10 @@ Since `CoppeliaSim` comes with a `ROSInterface` build for ROS `melodic` and we a
 
     ```
     $ cd ~/catkin_ws
-    $ source /opt/ros/noetic/setup.bash
-    $ export COPPELIASIM_ROOT_DIR=~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04
-    $ sudo apt-get install python3-pip xsltproc
-    $ pip3 install xmlschema
+    $ source /opt/ros/melodic/setup.bash
+    $ export COPPELIASIM_ROOT_DIR=~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu18_04
+    $ sudo apt-get install ros-melodic-image-transport ros-melodic-tf ros-melodic-tf2-geometry-ms ros-melodic-image-proc ros-melodic-kdl-parser ros-melodic-resource-retriever xsltproc
+    $ pip install xmlschema
     $ catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release
     ```
 4. Copy `ROSInterface` in the CoppeliaSim directory
@@ -219,14 +219,14 @@ To properly run the simulator, you will need three terminals, one for the `rosco
 - **In terminal 1 run:**
 
     ```
-    $ source /opt/ros/noetic/setup.bash
+    $ source /opt/ros/melodic/setup.bash
     $ roscore
     ```
 
 - **In terminal 2 run:**
 
     ```
-    $ cd ~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04
+    $ cd ~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu18_04
     $ LC_NUMERIC=en_US.UTF-8 ./coppeliaSim.sh
     ```
 
