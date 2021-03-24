@@ -238,5 +238,15 @@ To properly run the simulator, you will need three terminals, one for the `rosco
     $ source ~/catkin_ws/devel/setup.bash
     $ rosrun visp_ros_coppeliasim ibvs_april_tag_sync
     ```
+    
+At this point you should be able to see the following in CoppeliaSim GUI:
+
+![visp_ros_coppeliasim_gui](https://user-images.githubusercontent.com/1412746/112324358-01132a80-8cb3-11eb-84c9-458d8a9fbee1.jpg)
+
+Moreover, in the display opened when running `ibvs_april_tag_sync` node you should also see something similar to:
+
+![visp_ros_coppeliasim_visp_display](https://user-images.githubusercontent.com/1412746/112326267-abd81880-8cb4-11eb-95bc-b0e17047f857.jpg)
+
+You need to click in the display to start the visual-servo.
 
 Back to [summary](#summary).
