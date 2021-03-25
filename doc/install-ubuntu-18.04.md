@@ -194,11 +194,27 @@ To properly run the simulator, you will need three terminals, one for the `rosco
 - **In terminal 2 run:**
 
     ```
+    $ source ~/catkin_ws/devel/setup.bash
     $ cd ~/software/CoppeliaSim_Edu_V4_1_0_Ubuntu18_04
     $ LC_NUMERIC=en_US.UTF-8 ./coppeliaSim.sh
     ```
 
     Now in `CoppeliaSim` GUI, enter menu `"File > Open scene..."` and browse to `~/catkin_ws/src/visp_ros_coppeliasim/coppeliasim_scenes` folder to select `franka_joint_torque_control.ttt`
+
+    At this point, in `CoppeliaSim` GUI you should see the following feedback:
+
+    ```
+    [sandboxScript:info]   Simulator launched, welcome!
+    [CoppeliaSim:info]   Default scene was set-up.
+    [CoppeliaSim:info]   Loading scene ($HOME/catkin_ws/src/visp_ros_coppeliasim/coppeliasim_scenes/franka_joint_torque_control.ttt).  Serialization version is 22.
+    [CoppeliaSim:info]   File was previously written with CoppeliaSim version 4.01.00 (rev 1)
+    [CoppeliaSim:info]   Scene opened.
+    ROS interface was found.
+    ```
+    Be sure that ROS interface is found. If this is not the case, it means:
+
+    - either that you forget to `source ~/catkin_ws/devel/setup.bash`, 
+    - either that ROS interface that comes with `CoppeliaSim` is not compatible with `melodic` as stated [here](#install-coppeliasim-ros-interface).
 
 - **In terminal 3 run:**
 
