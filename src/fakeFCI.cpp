@@ -8,8 +8,10 @@
 #include "fakeFCI.h"
 using namespace KDL;
 
-fakeFCI::fakeFCI():_q(7,0),_dq(7,0),_tau_J(7,0), _q_(7),_dq_des_(7),_dq_des(7,0),_dq_des_filt(7,0),_v_cart_des(6,0),
-                   _tau_J_des(7,0), _tau_J_des_filt(7,0),_ft_cart_des(6,0),_q_min_(7),_q_max_(7),_eMc(){
+fakeFCI::fakeFCI():_q(7,0),_dq(7,0),_tau_J(7,0), _q_(7), _q_des_(7),_dq_des_(7),
+                   _q_des(7,0),_p_cart_des(6,0),_dq_des(7,0),_dq_des_filt(7,0),
+                   _v_cart_des(6,0),_tau_J_des(7,0), _tau_J_des_filt(7,0),
+                   _ft_cart_des(6,0),_q_min_(7),_q_max_(7),_eMc(){
 
 //  _chain_.addSegment(Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.333))));
 //  _chain_.addSegment(Segment(Joint(Joint::RotZ),Frame(Rotation(1,0,0,0,0,1,0,-1,0))));
@@ -49,10 +51,14 @@ fakeFCI::fakeFCI():_q(7,0),_dq(7,0),_tau_J(7,0), _q_(7),_dq_des_(7),_dq_des(7,0)
   _connected = false;
   _stateRobot = vpRobot::STATE_STOP ;
 
+  _posControlThreadIsRunning = false;
+  _posControlThreadStopAsked = false;
   _velControlThreadIsRunning = false;
   _velControlThreadStopAsked = false;
   _ftControlThreadIsRunning = false;
   _ftControlThreadStopAsked = false;
+  _posControlLock = false;
+  _posControlNewCmd = false;
   //  _q_= JntArray(_chain_.getNrOfJoints());
   //  for(unsigned int i=0;i<_chain_.getNrOfJoints();i++){
   //    _q_(i)=_q[i];
@@ -70,19 +76,19 @@ fakeFCI::~fakeFCI() {
   std::cout << "~fakeFCI() destructor called" << std::endl;
   _mutex.lock();
   _connected = false;
+  _posControlThreadStopAsked = true;
   _velControlThreadStopAsked = true;
   _ftControlThreadStopAsked = true;
   _mutex.unlock();
   if (_acquisitionThread.joinable()) {
     _acquisitionThread.join();
   }
-  if(_velControlThread.joinable()) {
-    _velControlThread.join();
+  if (_controlThread.joinable()) {
+    _controlThread.join();
+    _posControlThreadStopAsked = false;
+    _posControlThreadIsRunning = false;
     _velControlThreadStopAsked = false;
     _velControlThreadIsRunning = false;
-  }
-  if(_ftControlThread.joinable()) {
-    _ftControlThread.join();
     _ftControlThreadStopAsked = false;
     _ftControlThreadIsRunning = false;
   }
@@ -115,48 +121,54 @@ vpRobot::vpRobotStateType fakeFCI::setRobotState(vpRobot::vpRobotStateType newSt
   switch (newState) {
   case vpRobot::STATE_STOP: {
     // Start primitive STOP only if the current state is velocity or force/torque
-    if (vpRobot::STATE_VELOCITY_CONTROL == getRobotState()) {
-      // Stop the robot
+    if (vpRobot::STATE_POSITION_CONTROL == getRobotState()) {
+          std::cout << "Change the control mode from position control to stop.\n";
+          _posControlThreadStopAsked = true;
+        }
+    else if (vpRobot::STATE_VELOCITY_CONTROL == getRobotState()) {
+      std::cout << "Change the control mode from velocity control to stop.\n";
       _velControlThreadStopAsked = true;
-      if(_velControlThread.joinable()) {
-        _velControlThread.join();
-        _velControlThreadStopAsked = false;
-        _velControlThreadIsRunning = false;
-      }
     }
     else if (vpRobot::STATE_FORCE_TORQUE_CONTROL == getRobotState()) {
-      // Stop the robot
+      std::cout << "Change the control mode from force/torque control to stop.\n";
       _ftControlThreadStopAsked = true;
-      if(_ftControlThread.joinable()) {
-        _ftControlThread.join();
-        _ftControlThreadStopAsked = false;
-        _ftControlThreadIsRunning = false;
-      }
+    }
+
+    if(_controlThread.joinable()) {
+      _controlThread.join();
+      _posControlThreadStopAsked = false;
+      _posControlThreadIsRunning = false;
+      _velControlThreadStopAsked = false;
+      _velControlThreadIsRunning = false;
+      _ftControlThreadStopAsked = false;
+      _ftControlThreadIsRunning = false;
     }
     this->_stateRobot = newState;
     break;
   }
   case vpRobot::STATE_POSITION_CONTROL: {
-    if (vpRobot::STATE_VELOCITY_CONTROL == getRobotState()) {
+    if (vpRobot::STATE_STOP == getRobotState()) {
+        std::cout << "Change the control mode from stop to position control.\n";
+    }
+    else if (vpRobot::STATE_VELOCITY_CONTROL == getRobotState()) {
       std::cout << "Change the control mode from velocity to position control.\n";
-      // Stop the robot
+      // Stop the velocity control loop
       _velControlThreadStopAsked = true;
-      if(_velControlThread.joinable()) {
-        _velControlThread.join();
-        _velControlThreadStopAsked = false;
-        _velControlThreadIsRunning = false;
-      }
     }
     else if (vpRobot::STATE_FORCE_TORQUE_CONTROL == getRobotState()) {
       std::cout << "Change the control mode from force/torque to position control.\n";
-      // Stop the robot
+      // Stop the force control loop
       _ftControlThreadStopAsked = true;
-      if(_ftControlThread.joinable()) {
-        _ftControlThread.join();
-        _ftControlThreadStopAsked = false;
-        _ftControlThreadIsRunning = false;
-      }
     }
+    if(_controlThread.joinable()) {
+      _controlThread.join();
+      _velControlThreadStopAsked = false;
+      _velControlThreadIsRunning = false;
+      _ftControlThreadStopAsked = false;
+      _ftControlThreadIsRunning = false;
+    }
+//    _controlThread = std::thread([this] {this->positionContolLoop();});
+    this->_stateRobot = newState;
     break;
   }
   case vpRobot::STATE_VELOCITY_CONTROL: {
@@ -165,18 +177,21 @@ vpRobot::vpRobotStateType fakeFCI::setRobotState(vpRobot::vpRobotStateType newSt
     }
     else if (vpRobot::STATE_POSITION_CONTROL == getRobotState()) {
       std::cout << "Change the control mode from position to velocity control.\n";
+      _posControlThreadStopAsked = true;
     }
     else if (vpRobot::STATE_FORCE_TORQUE_CONTROL == getRobotState()) {
       std::cout << "Change the control mode from force/torque to velocity control.\n";
-      // Stop the robot
+      // Stop the force control loop
       _ftControlThreadStopAsked = true;
-      if(_ftControlThread.joinable()) {
-        _ftControlThread.join();
-        _ftControlThreadStopAsked = false;
-        _ftControlThreadIsRunning = false;
-      }
     }
-    _velControlThread = std::thread([this] {this->velocityContolLoop();});
+    if(_controlThread.joinable()) {
+      _controlThread.join();
+      _posControlThreadStopAsked = false;
+      _posControlThreadIsRunning = false;
+      _ftControlThreadStopAsked = false;
+      _ftControlThreadIsRunning = false;
+    }
+    _controlThread = std::thread([this] {this->velocityContolLoop();});
     this->_stateRobot = newState;
     break;
   }
@@ -186,18 +201,20 @@ vpRobot::vpRobotStateType fakeFCI::setRobotState(vpRobot::vpRobotStateType newSt
     }
     else if (vpRobot::STATE_POSITION_CONTROL == getRobotState()) {
       std::cout << "Change the control mode from position to force/torque control.\n";
+      _posControlThreadStopAsked = true;
     }
     else if (vpRobot::STATE_VELOCITY_CONTROL == getRobotState()) {
       std::cout << "Change the control mode from velocity to force/torque control.\n";
-      // Stop the robot
       _velControlThreadStopAsked = true;
-      if(_velControlThread.joinable()) {
-        _velControlThread.join();
-        _velControlThreadStopAsked = false;
-        _velControlThreadIsRunning = false;
-      }
     }
-    _ftControlThread = std::thread([this] {this->torqueControlLoop();});
+    if(_controlThread.joinable()) {
+      _controlThread.join();
+      _posControlThreadStopAsked = false;
+      _posControlThreadIsRunning = false;
+      _velControlThreadStopAsked = false;
+      _velControlThreadIsRunning = false;
+    }
+    _controlThread = std::thread([this] {this->torqueControlLoop();});
     this->_stateRobot = newState;
     break;
   }
@@ -226,6 +243,70 @@ void fakeFCI::readingLoop(){
   _connected = false;
 
   std::cout << "fakeFCI::readingLoop() thread is finished." << std::endl;
+
+};
+void fakeFCI::positionContolLoop(){
+  std::cout << "fakeFCI::positionContolLoop(): q_des = " << _q_des.t() << std::endl;
+  ros::NodeHandlePtr n = boost::make_shared<ros::NodeHandle>();
+  ros::Rate pos_loop_rate(500); // Hz
+  ros::Publisher joint_cmd_pub = n->advertise<sensor_msgs::JointState>("/fakeFCI/joint_commands", 1);
+  sensor_msgs::JointState joint_command_msg;
+  joint_command_msg.velocity.resize(7);
+  joint_command_msg.name.resize(7);
+  joint_command_msg.header.frame_id = "Joint_velocity_cmd";
+  for(int i=0; i<7; i++){
+    joint_command_msg.name[i] = "J" + std::to_string(i);
+  }
+  vpColVector vel_max(7, 0), dq_sat(7,0), gains(7,0);
+  vel_max = {2.1750 ,  2.1750 , 2.1750 , 2.1750 , 2.6100 , 2.6100 , 2.6100};
+
+//  const int order = 2; // 4th order (=2 biquads)
+//  std::array<Iir::Butterworth::LowPass<order>, 7> MultiChannelFilter;
+//  const float samplingrate = 500; // Hz
+//  const float cutoff_frequency = 10; // Hz
+//  for(int i=0;i<7;i++){
+//    MultiChannelFilter[i].setup (samplingrate, cutoff_frequency);
+//  }
+  vpMatrix Kp(7,7), Kd(7,7);
+
+  gains = {6.0, 6.0, 6.0, 6.0, 3.5, 2.5, 2.0};
+  Kp.diag(gains);
+  gains = {0.5, 0.5, 0.5, 0.5, 0.3, 0.25, 0.2};
+  Kd.diag(gains);
+
+  _posControlThreadIsRunning = true;
+  while (ros::ok() && !_posControlThreadStopAsked && _posControlNewCmd)
+  {
+    pos_loop_rate.sleep();
+    _mutex.lock();
+    _dq_des = Kp*(_q_des - _q) -Kd*_dq;
+    dq_sat = vpRobot::saturateVelocities(_dq_des, vel_max, false);
+    if(std::sqrt(((180/M_PI)*(_q_des - _q)).sumSquare()) > 0.1 ){
+//      _posControlLock = true;
+      for(int i=0; i<7; i++){
+//        _dq_des_filt[i] = MultiChannelFilter[i].filter((float)dq_sat[i]);
+//        joint_command_msg.velocity[i] = _dq_des_filt[i];
+
+        joint_command_msg.velocity[i] = dq_sat[i];
+      }
+    }else{
+      for(int i=0; i<7; i++){
+        joint_command_msg.velocity[i] = 0;
+      }
+//      _posControlLock = false;
+      _posControlNewCmd = false;
+    }
+
+    _mutex.unlock();
+    joint_cmd_pub.publish(joint_command_msg);
+  }
+
+  for(int i=0; i<7; i++){
+    joint_command_msg.velocity[i] = 0;
+  }
+  joint_cmd_pub.publish(joint_command_msg);
+  _posControlThreadIsRunning = false;
+  std::cout << "fakeFCI::positionContolLoop() position reached!. \n";
 
 };
 
@@ -409,68 +490,80 @@ void fakeFCI::getPosition(const vpRobot::vpControlFrameType frame, vpColVector &
 //  case vpRobot::REFERENCE_FRAME:
   case vpRobot::END_EFFECTOR_FRAME: {
 //    std::cout << "fakeFCI::getPosition() END_EFFECTOR_FRAME \n" ;
-    position.resize(6);
-    KDL::Frame cartpos;
-    // Calculate forward position kinematics
-    bool kinematics_status;
-    vpRotationMatrix R;
-    vpTranslationVector t;
-    std::lock_guard<std::mutex> lock(_mutex);
-    kinematics_status = _fksolver_->JntToCart(_q_,cartpos);
-    if(kinematics_status>=0){
-      for(unsigned int i=0;i<3;i++){
-        for(unsigned int j=0;j<3;j++){
-          R[i][j] = cartpos.M.data[3*i+j];
-        }
-        t[i] = cartpos.p.data[i];
-      }
-      vpPoseVector fPe(t,R);
+      position.resize(6);
+
+      vpPoseVector fPc(get_fMe());
       for (size_t i=0; i < 6; i++) {
-        position[i] = fPe[i];
+        position[i] = fPc[i];
       }
-    }else{
-      printf("%s \n","Warning: fakeFCI::getPosition(): could not calculate forward kinematics :(");
-    }
+
     break;
   }
-  //  case vpRobot::TOOL_FRAME: { // same as CAMERA_FRAME
-  //    position.resize(6);
-  //    vpHomogeneousMatrix fMc = get_fMc(q);
-  //    vpPoseVector fPc(fMc);
-  //    for (size_t i=0; i < 6; i++) {
-  //      position[i] = fPc[i];
-  //    }
-  //    break;
-  //  }
+    case vpRobot::CAMERA_FRAME: { // same as CAMERA_FRAME
+      position.resize(6);
+      vpPoseVector fPc(get_fMe()*_eMc);
+      for (size_t i=0; i < 6; i++) {
+        position[i] = fPc[i];
+      }
+      break;
+    }
   default: {
     throw(vpException(vpException::fatalError, "Cannot get Franka cartesian position: wrong method"));
   }
   }
 };
 
+void fakeFCI::getPosition(const vpRobot::vpControlFrameType frame, vpPoseVector &position){
+	vpColVector pos(6,0);
+	if(frame == vpRobot::END_EFFECTOR_FRAME || frame == vpRobot::CAMERA_FRAME){
+		getPosition(frame, pos);
+		for (size_t i=0; i < 6; i++) {
+			position[i] = pos[i];
+		}
+	}else{
+		throw(vpException(vpException::fatalError, "Cannot get a cartesian position for the specified frame"));
+	}
+};
+
 void fakeFCI::setPosition(const vpRobot::vpControlFrameType frame, const vpColVector &position){
-  printf("%s \n","Warning: fakeFCI::setPosition(): this functionality has yet to be implemented :(");
-  bool impl = false;
-  if(impl){
-    switch(frame) {
-    case vpRobot::JOINT_STATE: {
-      std::lock_guard<std::mutex> lock(_mutex);
-      for(int i=0;i<7;i++){
-        _q_(i) =_q[i] = position[i];
-      }
-      break;
+  switch(frame) {
+  case vpRobot::JOINT_STATE: {
+    //    std::lock_guard<std::mutex> lock(_mutex);
+    _mutex.lock();
+    for(int i=0;i<7;i++){
+      _q_des[i] = position[i];
     }
-    case vpRobot::END_EFFECTOR_FRAME: {
-      // inverse kinematics still has to be implemented
-      std::lock_guard<std::mutex> lock(_mutex);
-      //TODO
-      break;
-    }
-    default: {
-      throw(vpException(vpException::fatalError, "Cannot set Franka position for the specified frame "));
-    }
-    }
+    _posControlNewCmd = true;
+    _mutex.unlock();
+
+    break;
   }
+  case vpRobot::END_EFFECTOR_FRAME: {
+    std::cout << " fakeFCI::setPosition(END_EFFECTOR_FRAME, pos):  \n";
+    vpHomogeneousMatrix H;
+    H.buildFrom(position[0],position[1],position[2],position[3],position[4],position[5]);
+    _mutex.lock();
+    _q_des = this->SolveIK(H);
+    _posControlNewCmd = true;
+    _mutex.unlock();
+
+    break;
+  }
+  default: {
+    throw(vpException(vpException::fatalError, "Cannot set Franka position for the specified frame \n"));
+  }
+  }
+
+  if(vpRobot::STATE_POSITION_CONTROL  == getRobotState()){
+    _controlThread = std::thread([this] {this->positionContolLoop();});
+
+    if(_controlThread.joinable()){
+      _controlThread.join();
+    }
+  }else{
+    std::cout << "Robot is not in STATE_POSITION_CONTROL, you should change to position control before. \n" ;
+  }
+
 };
 
 vpColVector fakeFCI::SolveIK(const vpHomogeneousMatrix &edMw){
@@ -496,8 +589,10 @@ vpColVector fakeFCI::SolveIK(const vpHomogeneousMatrix &edMw){
     std::cout << "fakeFCI::SolveIK: E_NOT_IMPLEMENTED \n" ;
     break;
   }
-    q_out = _q_;
-    std::cout << "fakeFCI::SolveIK: unable to solve ik \n" ;
+  default: {
+    throw(vpException(vpException::fatalError, "fakeFCI::SolveIK: unable to solve ik\n"));
+  }
+
   }
 
   for(int i=0;i<7;i++){
@@ -506,31 +601,31 @@ vpColVector fakeFCI::SolveIK(const vpHomogeneousMatrix &edMw){
   return q_solved;
 };
 
-void fakeFCI::getVelocity(const vpRobot::vpControlFrameType frame, vpColVector &d_position){
+void fakeFCI::getVelocity(const vpRobot::vpControlFrameType frame, vpColVector &d_velocity){
   switch(frame) {
   case vpRobot::JOINT_STATE: {
 //    std::cout << "fakeFCI::getVelocity(): JOINT_STATE: \n";
-    d_position.resize(7);
+	  d_velocity.resize(7);
     std::lock_guard<std::mutex> lock(_mutex);
-    d_position = _dq;
+    d_velocity = _dq;
     break;
   }
   case vpRobot::END_EFFECTOR_FRAME: {
 //    std::cout << "fakeFCI::getVelocity(): END_EFFECTOR_FRAME: \n";
-    d_position.resize(6);
+	  d_velocity.resize(6);
     vpMatrix eJe(6,7);
     this->get_eJe(eJe);
     std::lock_guard<std::mutex> lock(_mutex);
-    d_position = eJe*_dq;
+    d_velocity = eJe*_dq;
     break;
   }
   case vpRobot::REFERENCE_FRAME: {
 //    std::cout << "fakeFCI::getVelocity(): REFERENCE_FRAME: \n";
-    d_position.resize(6);
+	  d_velocity.resize(6);
     vpMatrix fJe(6,7);
     this->get_fJe(fJe);
     std::lock_guard<std::mutex> lock(_mutex);
-    d_position = fJe*_dq;
+    d_velocity = fJe*_dq;
     break;
   }
   default: {

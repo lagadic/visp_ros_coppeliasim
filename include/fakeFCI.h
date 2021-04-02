@@ -45,6 +45,9 @@ class fakeFCI {
     void get_eJe(vpMatrix &eJe_);
     void get_eJe(const vpColVector &q, vpMatrix &fJe);
     void getPosition(const vpRobot::vpControlFrameType frame, vpColVector &position);
+    void getPosition(const vpRobot::vpControlFrameType frame, vpPoseVector &position);
+
+
     // this function should control the robot in order to bring it to the desired configuration "position"
     // be aware that by now it directly assigns the given position as current position!
     void setPosition(const vpRobot::vpControlFrameType frame, const vpColVector &position);
@@ -67,9 +70,9 @@ class fakeFCI {
     bool is_connected(){return this->_connected;};
 
   private:
-    vpColVector _q;
-    vpColVector _dq;
-    vpColVector _tau_J;
+    vpColVector _q;      // Joint Positions
+    vpColVector _dq;     // Joint Velocities
+    vpColVector _tau_J;  // Joint efforts
 
     bool _connected;
     std::thread _acquisitionThread;
@@ -78,6 +81,7 @@ class fakeFCI {
     void JointState_callback(const sensor_msgs::JointState& J_state);
 
     KDL::JntArray _q_;
+    KDL::JntArray _q_des_;
     KDL::JntArray _dq_des_;
     KDL::Chain _chain_;
     KDL::JntArray  _q_min_;
@@ -93,23 +97,31 @@ class fakeFCI {
 //    ChainIkSolverVel_wdls* _DiffIkSolver;
 
     vpRobot::vpRobotStateType _stateRobot;
+    std::thread _controlThread;
+
+    // Position controller
+    std::atomic_bool _posControlThreadIsRunning;
+    std::atomic_bool _posControlThreadStopAsked;
+    std::atomic_bool _posControlLock;
+    std::atomic_bool _posControlNewCmd;
+    vpColVector _q_des;        // Desired joint position.
+    vpColVector _p_cart_des;   // Desired Cartesian pose in end-effector frame.
+    void positionContolLoop();
 
     // Velocity controller
-    std::thread _velControlThread;
     std::atomic_bool _velControlThreadIsRunning;
     std::atomic_bool _velControlThreadStopAsked;
-    vpColVector _dq_des;   // Desired joint velocity
-    vpColVector _dq_des_filt;   // Desired joint velocity
-    vpColVector _v_cart_des;         // Desired cartesian velocity either in reference, end-effector, camera, or tool frame
+    vpColVector _dq_des;            // Desired joint velocity.
+    vpColVector _dq_des_filt;       // Desired joint velocity filtered.
+    vpColVector _v_cart_des;        // Desired Cartesian velocity in end-effector frame.
     void velocityContolLoop();
 
     // Force/torque controller
-    std::thread _ftControlThread;
     std::atomic_bool _ftControlThreadIsRunning;
     std::atomic_bool _ftControlThreadStopAsked;
-    vpColVector _tau_J_des; // Desired joint torques
-    vpColVector _tau_J_des_filt; // Desired joint torques filtered
-    vpColVector _ft_cart_des;         // Desired cartesian force/torque either in reference, end-effector, camera, or tool frame
+    vpColVector _tau_J_des;         // Desired joint torques.
+    vpColVector _tau_J_des_filt;    // Desired joint torques filtered.
+    vpColVector _ft_cart_des;       // Desired Cartesian force/torque in end-effector frame.
     void torqueControlLoop();
 
     vpHomogeneousMatrix _eMc;
