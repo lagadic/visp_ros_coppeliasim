@@ -53,18 +53,10 @@ set(SRC_FRANKA_MODEL
   src/GravityVector.cpp
   src/MassMatrix.cpp
 )
-#set(SRC_FRANKA_CLASS
-#  src/fakeFCI.cpp
-#)
 
 ## Declare a C++ library
-set(FRANKA_MODEL_LIBRARY franka_model)
-#set(FRANKA_CLASS_LIBRARY franka_class)
-add_library(${FRANKA_MODEL_LIBRARY} SHARED ${SRC_FRANKA_MODEL})
-#add_library(${FRANKA_CLASS_LIBRARY} SHARED ${SRC_FRANKA_CLASS})
-
-#set(liborocos_kdl /opt/ros/melodic/lib/liborocos-kdl.so)
-
+set(FRANKA_DYN_MODEL_LIBRARY franka_dyn_model)
+add_library(${FRANKA_DYN_MODEL_LIBRARY} SHARED ${SRC_FRANKA_MODEL})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -77,12 +69,13 @@ add_library(${FRANKA_MODEL_LIBRARY} SHARED ${SRC_FRANKA_MODEL})
 add_executable(four_dots_target_non_sync src/FourDotsTarget_nonSync.cpp)
 add_executable(ibvs_april_tag_sync src/IBVS_AprilTag_sync.cpp)
 add_executable(ibvs_melines_sync src/IBVS_meLines_sync.cpp)
-add_executable(fake_fci src/fake_fci_test.cpp)
+add_executable(fake_fci_test src/fake_fci_test.cpp)
 add_executable(franka_joint_torque_control src/Franka_joint_torque_control.cpp)
 add_executable(franka_cartesian_torque_control src/Franka_cartesian_torque_control.cpp)
 add_executable(orientation_test src/orientation_test.cpp)
 add_executable(franka_image_torque_control src/Franka_image_torque_control.cpp)
 add_executable(franka_image_lines_control src/Franka_image_lines_control.cpp)
+add_executable(cartesian_impedance src/Cartesian_impedance.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -104,7 +97,7 @@ target_link_libraries(
  
  target_link_libraries(
    ibvs_april_tag_sync
-   ${FRANKA_MODEL_LIBRARY}
+   ${FRANKA_DYN_MODEL_LIBRARY}
    ${VISP_LIBRARIES}
    ${catkin_LIBRARIES}
    iir::iir
@@ -112,24 +105,24 @@ target_link_libraries(
  
  target_link_libraries(
    ibvs_melines_sync
-   ${FRANKA_MODEL_LIBRARY}
+   ${FRANKA_DYN_MODEL_LIBRARY}
    ${VISP_LIBRARIES}
    ${catkin_LIBRARIES}
    iir::iir
  )
   
  target_link_libraries(
-   fake_fci
+   fake_fci_test
    ${VISP_LIBRARIES}
    ${catkin_LIBRARIES}
-   ${FRANKA_MODEL_LIBRARY}
+   ${FRANKA_DYN_MODEL_LIBRARY}
    ${orocos_kdl_LIBRARIES}
    iir::iir
  )
  
   target_link_libraries(
    franka_joint_torque_control
-   ${FRANKA_MODEL_LIBRARY}
+   ${FRANKA_DYN_MODEL_LIBRARY}
    ${VISP_LIBRARIES}
    ${catkin_LIBRARIES}
    iir::iir
@@ -137,7 +130,7 @@ target_link_libraries(
  
   target_link_libraries(
     franka_cartesian_torque_control
-    ${FRANKA_MODEL_LIBRARY}
+    ${FRANKA_DYN_MODEL_LIBRARY}
     ${VISP_LIBRARIES}
     ${catkin_LIBRARIES}
     iir::iir
@@ -145,7 +138,7 @@ target_link_libraries(
  
   target_link_libraries(
    franka_image_torque_control
-   ${FRANKA_MODEL_LIBRARY}
+   ${FRANKA_DYN_MODEL_LIBRARY}
    ${VISP_LIBRARIES}
    ${catkin_LIBRARIES}
    iir::iir
@@ -153,7 +146,7 @@ target_link_libraries(
  
   target_link_libraries(
    franka_image_lines_control
-   ${FRANKA_MODEL_LIBRARY}
+   ${FRANKA_DYN_MODEL_LIBRARY}
    ${VISP_LIBRARIES}
    ${catkin_LIBRARIES}
    iir::iir
@@ -161,7 +154,15 @@ target_link_libraries(
 
   target_link_libraries(
    orientation_test
-   ${FRANKA_MODEL_LIBRARY}
+   ${FRANKA_DYN_MODEL_LIBRARY}
+   ${VISP_LIBRARIES}
+   ${catkin_LIBRARIES}
+   iir::iir
+ )
+
+target_link_libraries(
+   cartesian_impedance
+   ${FRANKA_DYN_MODEL_LIBRARY}
    ${VISP_LIBRARIES}
    ${catkin_LIBRARIES}
    iir::iir
