@@ -1,5 +1,7 @@
-# visp_ros_coppeliasim
+# DEPRECATED visp_ros_coppeliasim
 Robot simulator based on ROS, CoppeliaSim and ViSP
+
+This project is not maintained. You should rather use [visp_ros](github.com/lagadic/visp_ros) project
 
 # Installation instructions
 
